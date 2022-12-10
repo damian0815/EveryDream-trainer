@@ -26,7 +26,7 @@ On the command line, use v1-finetune_micro.yaml which is setup for this case.  Y
 
     python main.py --base configs/stable-diffusion/v1-finetune_micro.yaml -t --actual_resume sd_v1-5_vae.ckpt -n ted --gpus 0, --data_root training_samples\ted_bennett
 
-Prompt is simply "ted bennett" as "ted bennet" is in all the training images plus captions for the rest of the scene.
+Prompt is simply "ted bennett" as "ted bennett" is in all the training images plus captions for the rest of the scene.
 
 Some examples of output (ted bennet in a ballet skirt on stage, etc):
 
