@@ -225,6 +225,18 @@ To prune your file down from 11GB to 2GB file use:
 
 I do not suggest using a pruned 2GB file to resume later training.  If you want to resume training, use the full 11GB file.  You can move your 2GB file to whatever your favorite Stable Diffusion webui is, test it out, and delete all the 11GB files and your log folder once you are satisfied with the results.
 
+### Autoprune All
+
+To prune all the ckpts at once from your logs folders, use this:
+
+    python scripts/autoprune_all.py
+
+or
+  
+    python scripts/autoprune_all.py --delete
+
+This will sweep all the ckpts in your logs folder, copy them all down to the root trainer folder, and prune them down to 2GB files.  If you use the --delete flag, it will delete the original 11GB files. 
+
 ### Additional notes
 
 Thanks go to the CompVis team for the original training code, Xaiver Xiao for the DreamBooth implementation and tweaking of trainer configs to stuff it into a 24GB card, and Kane Wallmann for the first implementation of image caption from the filenames.
