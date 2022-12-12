@@ -33,3 +33,19 @@ Some examples of output (ted bennet in a ballet skirt on stage, etc):
 ![ted bennett as ironman](../demo/ted_bennett_ballet.png)
 ![ted bennett as ironman](../demo/ted_bennett_ironman.png)
 ![ted bennett as ironman](../demo/ted_bannett_superman.png)
+
+## Micro style
+
+This is a quick test forcing a style into the model of "blacklight neon" posters.  Take a look at the dataset.
+
+Dataset: https://huggingface.co/panopstor/EveryDream/blob/main/blacklight.zip 
+
+Yaml: https://huggingface.co/panopstor/EveryDream/blob/main/v1-finetune_blacklight.yaml
+
+Ckpt: https://huggingface.co/panopstor/EveryDream/blob/main/blacklightneon-pruned.ckpt
+
+(note high conditional dropout of 0.15 (15%) helps quickly force the style)
+
+Trained for a single epoch in about 20 minutes.
+
+![blacklight neon tom cruise](../demo/blacklightneontomcruise.png)
