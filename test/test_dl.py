@@ -1,18 +1,29 @@
 # script to test data loader by itself
-# run from training root, edit the data_root manually
-# python ldm/data/test_dl.py
+# run from trainer root directory
+# Ex:
+# python test/test_dl.py --data_root "x:/mytestdata/input" --batch_size 2
+import argparse
+
 import ldm.data.data_loader as dl
 
-data_root = "r:/everydream-trainer/test/input"
+def main(data_root, batch_size):
+    data_loader = dl.DataLoaderMultiAspect(data_root=data_root, batch_size=batch_size, debug_level=1)
 
-data_loader = dl.DataLoaderMultiAspect(data_root=data_root, batch_size=2, seed=555, debug_level=2)
+    image_caption_pairs = data_loader.get_all_images()
 
-image_caption_pairs = data_loader.get_all_images()
+    print(f"Loaded {len(image_caption_pairs)} image-caption pairs")
 
-print(f"Loaded {len(image_caption_pairs)} image-caption pairs")
+    print(f"**** Done loading. Loaded {len(image_caption_pairs)} images from data_root: {data_root} ****")
 
-for image_caption_pair in image_caption_pairs:
-    print(image_caption_pair)
+if __name__ == "__main__":
+    """
+    test the data loader by itself, outputs buckets and image counts
+    data_root: root folder of training data
+    batch_size: number of images per batch
+    """
     
-
-print(f"**** Done loading. Loaded {len(image_caption_pairs)} images from data_root: {data_root} ****")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_root", type=str, default="input", help="root folder of training data")
+    parser.add_argument("--batch_size", type=int, default=4, help="number of images per batch")
+    args = parser.parse_args()
+    main(data_root=args.data_root, batch_size=args.batch_size)
