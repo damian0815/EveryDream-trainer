@@ -22,7 +22,7 @@ This trainer is focused on enabling fine tuning with new training data plus weav
 
 To get the most out of this trainer, you will need to curate your data with captions.  Luckily, there are additional tools below to help enable that, and will grow over time.
 
-Check out the tools repo here: [Every Dream Tools](https://www.github.com/victorchall/everydream) for automated captioning and Laion web scraper tools so you can use real images for model preservation if you wish to step beyond micro models. 
+Check out the tools repo here: [Every Dream Tools](https://github.com/victorchall/everydream#tools) for automated captioning and Laion web scraper tools so you can use real images for model preservation if you wish to step beyond micro models. 
 
 ## Installation
 
