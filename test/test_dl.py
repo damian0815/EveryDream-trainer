@@ -6,8 +6,8 @@ import argparse
 
 import ldm.data.data_loader as dl
 
-def main(data_root, batch_size):
-    data_loader = dl.DataLoaderMultiAspect(data_root=data_root, batch_size=batch_size, debug_level=1, resolution=512)
+def main(data_root, batch_size, resolution):
+    data_loader = dl.DataLoaderMultiAspect(data_root=data_root, batch_size=batch_size, resolution=resolution, debug_level=1)
 
     image_caption_pairs = data_loader.get_all_images()
 
