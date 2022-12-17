@@ -29,7 +29,15 @@ def load_model_from_config(config, ckpt, verbose=False):
     pl_sd = torch.load(ckpt, map_location="cpu")
     if "global_step" in pl_sd:
         print(f"ckpt: {ckpt} has {pl_sd['global_step']} steps")
-    sd = pl_sd["state_dict"]
+        
+    ## sd = pl_sd["state_dict"]
+    if "state_dict" in pl_sd:
+        print("load_state_dict from state_dict")
+        sd = pl_sd["state_dict"]        
+    else:
+        print("load_state_dict from directly")
+        sd = pl_sd
+        
     config.model.params.ckpt_path = ckpt
     model = instantiate_from_config(config.model)
     m, u = model.load_state_dict(sd, strict=False)
