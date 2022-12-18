@@ -1,6 +1,8 @@
-# EveryDream 2.0 trainer 
+# We've moved!
 
 **EveryDream 2.0 is now live** https://github.com/victorchall/EveryDream2trainer
+
+Below is the docs for EveryDream 1.0 (this repo)
 
 ## Every Dream trainer for Stable Diffusion
 
