@@ -48,8 +48,10 @@ def load_model_from_config(config, ckpt, verbose=False):
         print("unexpected keys:")
         print(u)
 
-    model.to('mps')
-    #model.cuda()
+    if torch.cuda.is_available():
+        model.cuda()
+    elif torch.backends.mps.is_availabe():
+        model.to('mps')
     return model
 
 def get_parser(**parser_kwargs):
