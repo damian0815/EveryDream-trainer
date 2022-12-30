@@ -18,7 +18,7 @@ class EveryDreamBatch(Dataset):
     """
     def __init__(self,
                  data_root,
-                 repeats=10,
+                 repeats=1,
                  flip_p=0.0,
                  debug_level=0,
                  batch_size=1,
@@ -27,6 +27,8 @@ class EveryDreamBatch(Dataset):
                  resolution=512,
                  crop_jitter=20,
                  seed=555,
+                 test_pct=0.15,
+                 validate_pct=0.15
                  ):
         self.data_root = data_root
         self.batch_size = batch_size
@@ -36,12 +38,19 @@ class EveryDreamBatch(Dataset):
         self.unloaded_to_idx = 0
         if seed == -1:
             seed = random.randint(0, 9999)
-        
+
         if not dls.shared_dataloader:
             print(" * Creating new dataloader singleton")
-            dls.shared_dataloader = dlma(data_root=data_root, seed=seed, debug_level=debug_level, batch_size=self.batch_size, flip_p=flip_p, resolution=resolution)
-        
-        self.image_train_items = dls.shared_dataloader.get_all_images()
+            dls.shared_dataloader = dlma(data_root=data_root,
+                                         seed=seed,
+                                         debug_level=debug_level,
+                                         batch_size=self.batch_size,
+                                         flip_p=flip_p,
+                                         resolution=resolution,
+                                         test_pct=test_pct,
+                                         validate_pct=validate_pct)
+
+        self.image_train_items = dls.shared_dataloader.get_train_images()
         
         self.num_images = len(self.image_train_items)
 

@@ -16,7 +16,15 @@ class DataLoaderMultiAspect():
     batch_size: number of images per batch
     flip_p: probability of flipping image horizontally (i.e. 0-0.5)
     """
-    def __init__(self, data_root, seed=555, debug_level=0, batch_size=1, flip_p=0.0, resolution=512):
+    def __init__(self,
+                 data_root,
+                 seed=555,
+                 debug_level=0,
+                 batch_size=1,
+                 flip_p=0.0,
+                 resolution=512,
+                 test_pct=0.15,
+                 validate_pct=0.15):
         self.image_paths = []
         self.debug_level = debug_level
         self.flip_p = flip_p
@@ -30,8 +38,35 @@ class DataLoaderMultiAspect():
         prepared_train_data = self.__prescan_images(debug_level, self.image_paths, flip_p) # ImageTrainItem[]
         self.image_caption_pairs = self.__bucketize_images(prepared_train_data, batch_size=batch_size, debug_level=debug_level)
 
+        # automatically split all image indices (which are already shuffled) into test/train indices
+        image_count = len(self.image_caption_pairs)
+        train_split_pos = int((image_count * (1.0 - (test_pct + validate_pct))) // batch_size) * batch_size
+        if train_split_pos <= 0:
+            raise ValueError(f"test_pct {test_pct} and validation_pct {validate_pct} are too high for image count {image_count}")
+        test_split_pos = int((image_count * (1.0 - (validate_pct))) // batch_size) * batch_size
+
+        self.train_indices = list(range(train_split_pos))
+        self.test_indices = list(range(train_split_pos,test_split_pos))
+        self.validation_indices = list(range(test_split_pos,image_count))
+        if len(self.test_indices) == 0:
+            raise ValueError(f"test_pct {test_pct} results in a test split index {test_split_pos} that is the same as train split index {train_split_pos}")
+        if len(self.validation_indices) == 0:
+            raise ValueError(f"test_pct {test_pct} results in a test split index {test_split_pos} that leaves no images left for validation")
+        assert((len(self.train_indices) % batch_size) == 0)
+        assert((len(self.test_indices) % batch_size) == 0)
+        assert((len(self.validation_indices) % batch_size) == 0)
+
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         
+
+    def get_train_images(self):
+        return [self.image_caption_pairs[i] for i in self.train_indices]
+
+    def get_test_images(self):
+        return [self.image_caption_pairs[i] for i in self.test_indices]
+
+    def get_validation_images(self):
+        return [self.image_caption_pairs[i] for i in self.validation_indices]
 
     def get_all_images(self):
         return self.image_caption_pairs

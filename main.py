@@ -48,7 +48,8 @@ def load_model_from_config(config, ckpt, verbose=False):
         print("unexpected keys:")
         print(u)
 
-    model.cuda()
+    model.to('mps')
+    #model.cuda()
     return model
 
 def get_parser(**parser_kwargs):
@@ -695,18 +696,22 @@ if __name__ == "__main__":
 
         # data
         config.data.params.train.params.data_root = opt.data_root
+        if config.data.params.validation.params is None:
+            config.data.params.validation.params = {}
         config.data.params.validation.params.data_root = opt.data_root
+        if config.data.params.test.params is None:
+            config.data.params.test.params = {}
         config.data.params.test.params.data_root = opt.data_root
         data = instantiate_from_config(config.data)
 
         # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
         # calling these ourselves should not be necessary but it is.
         # lightning still takes care of proper multiprocessing though
-        data.prepare_data()
-        data.setup()
-        print("#### Data #####")
-        for k in data.datasets:
-            print(f"{k}, {data.datasets[k].__class__.__name__}, {len(data.datasets[k])}")
+        #data.prepare_data()
+        #data.setup()
+        #print("#### Data #####")
+        #for k in data.datasets:
+        #    print(f"{k}, {data.datasets[k].__class__.__name__}, {len(data.datasets[k])}")
 
         # configure learning rate
         bs, base_lr = config.data.params.batch_size, config.model.base_learning_rate
@@ -766,7 +771,7 @@ if __name__ == "__main__":
         if not opt.no_test and not trainer.interrupted:
             trainer.test(model, data)
     except Exception:
-        if opt.debug and trainer.global_rank == 0:
+        if opt.debug and trainer is not None and trainer.global_rank == 0:
             try:
                 import pudb as debugger
             except ImportError:

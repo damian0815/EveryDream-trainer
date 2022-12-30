@@ -8,9 +8,6 @@ from ldm.data.image_train_item import ImageTrainItem
 class EDValidateBatch(Dataset):
     def __init__(self,
                  data_root,
-                 flip_p=0.0,
-                 repeats=1,
-                 debug_level=0,
                  batch_size=1,
                  set='val',
                  ):
@@ -18,25 +15,24 @@ class EDValidateBatch(Dataset):
         self.batch_size = batch_size
 
         if not dls.shared_dataloader:
-            print("Creating new dataloader singleton")
-            dls.shared_dataloader = dlma(data_root=data_root, debug_level=debug_level, batch_size=self.batch_size, flip_p=flip_p)
-            
-        self.image_train_items = dls.shared_dataloader.get_all_images()
+            raise RuntimeError(f"{type(self).__name__} must be instantiated after EveryDreamBatch")
+
+        self.image_train_items = dls.shared_dataloader.get_validation_images() if set=='val' else dls.shared_dataloader.get_test_images()
         
         self.num_images = len(self.image_train_items)
 
-        self._length = max(math.trunc(self.num_images * repeats), batch_size) - self.num_images % self.batch_size
+        self._length = self.num_images
 
         print()
-        print(f" ** Validation Set: {set}, steps: {self._length / batch_size:.0f}, repeats: {repeats} ")
+        print(f" ** Validation/Test Set: {set}, steps: {self._length / batch_size:.0f}")
         print()
 
     def __len__(self):
         return self._length
 
     def __getitem__(self, i):
-        idx = i % self.num_images
-        image_train_item = self.image_train_items[idx]
+        assert(i < self.num_images)
+        image_train_item = self.image_train_items[i]
 
         example = self.__get_image_for_trainer(image_train_item)
         return example
