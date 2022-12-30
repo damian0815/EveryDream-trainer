@@ -50,7 +50,7 @@ def load_model_from_config(config, ckpt, verbose=False):
 
     if torch.cuda.is_available():
         model.cuda()
-    elif torch.backends.mps.is_availabe():
+    elif torch.backends.mps.is_available():
         model.to('mps')
     return model
 
@@ -253,8 +253,9 @@ class DataModuleFromConfig(pl.LightningDataModule):
         self.wrap = wrap
 
     def prepare_data(self):
-        for data_cfg in self.dataset_configs.values():
-            instantiate_from_config(data_cfg)
+        #for data_cfg in self.dataset_configs.values():
+        #    instantiate_from_config(data_cfg)
+        pass
 
     def setup(self, stage=None):
         self.datasets = dict(
@@ -287,7 +288,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
                           shuffle=False)
 
     def _test_dataloader(self, shuffle=False):
-        is_iterable_dataset = isinstance(self.datasets['train'], Txt2ImgIterableBaseDataset)
+        is_iterable_dataset = isinstance(self.datasets['test'], Txt2ImgIterableBaseDataset)
         if is_iterable_dataset or self.use_worker_init_fn:
             init_fn = worker_init_fn
         else:
@@ -469,17 +470,21 @@ class ImageLogger(Callback):
 class CUDACallback(Callback):
     def on_train_epoch_start(self, trainer, pl_module):
         # Reset the memory use counter
-        torch.cuda.reset_peak_memory_stats(trainer.strategy.root_device.index)
-        torch.cuda.synchronize(trainer.strategy.root_device.index)
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats(trainer.strategy.root_device.index)
+            torch.cuda.synchronize(trainer.strategy.root_device.index)
         self.start_time = time.time()
 
     def on_train_epoch_end(self, trainer, pl_module):
-        torch.cuda.synchronize(trainer.strategy.root_device.index)
-        max_memory = torch.cuda.max_memory_allocated(trainer.strategy.root_device.index) / 2 ** 20
+        if torch.cuda.is_available():
+            torch.cuda.synchronize(trainer.strategy.root_device.index)
+            max_memory = torch.cuda.max_memory_allocated(trainer.strategy.root_device.index) / 2 ** 20
         epoch_time = time.time() - self.start_time
 
         try:
-            max_memory = trainer.strategy.reduce(max_memory)
+            max_memory = 0
+            if torch.cuda.is_available():
+                max_memory = trainer.strategy.reduce(max_memory)
             epoch_time = trainer.strategy.reduce(epoch_time)
 
             epoch_time_msg =f"Average Epoch time: {epoch_time:.2f} seconds"

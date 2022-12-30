@@ -49,7 +49,7 @@ class DataLoaderMultiAspect():
         self.test_indices = list(range(train_split_pos,test_split_pos))
         self.validation_indices = list(range(test_split_pos,image_count))
         if len(self.test_indices) == 0:
-            raise ValueError(f"test_pct {test_pct} results in a test split index {test_split_pos} that is the same as train split index {train_split_pos}")
+            print(f"* warning: test_pct {test_pct} results in 0 test images (out of {image_count} total)")
         if len(self.validation_indices) == 0:
             raise ValueError(f"test_pct {test_pct} results in a test split index {test_split_pos} that leaves no images left for validation")
         assert((len(self.train_indices) % batch_size) == 0)
