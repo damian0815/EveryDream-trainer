@@ -396,20 +396,27 @@ class ImageLogger(Callback):
                   global_step, current_epoch, batch_idx):
         root = os.path.join(save_dir, "images", split)
         for k in images:
-            grid = torchvision.utils.make_grid(images[k], nrow=4)
-            if self.rescale:
-                grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
-            grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
-            grid = grid.numpy()
-            grid = (grid * 255).astype(np.uint8)
-            filename = "{}_gs-{:05}_ep-{:02}_batch-{:04}.jpg".format(
+            filename = "{}_gs-{:05}_ep-{:02}_batch-{:04}.{}".format(
                 k,
                 global_step,
                 current_epoch,
-                batch_idx)
+                batch_idx,
+                'txt' if k == 'caption' else 'jpg')
             path = os.path.join(root, filename)
             os.makedirs(os.path.split(path)[0], exist_ok=True)
-            Image.fromarray(grid).save(path)
+            if k == 'caption':
+                captions_joined = "\n".join(images[k])
+                with open(path, 'w') as f:
+                    f.write(captions_joined)
+            else:
+                grid = torchvision.utils.make_grid(images[k], nrow=4)
+                if self.rescale:
+                    grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
+                grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
+                grid = grid.numpy()
+                grid = (grid * 255).astype(np.uint8)
+                Image.fromarray(grid).save(path)
+
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
         check_idx = batch_idx if self.log_on_batch_idx else pl_module.global_step
@@ -434,6 +441,7 @@ class ImageLogger(Callback):
                     if self.clamp:
                         images[k] = torch.clamp(images[k], -1., 1.)
 
+            images['caption'] = batch['caption']
             self.log_local(pl_module.logger.save_dir, split, images,
                            pl_module.global_step, pl_module.current_epoch, batch_idx)
 

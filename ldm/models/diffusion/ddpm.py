@@ -1296,7 +1296,7 @@ class LatentDiffusion(DDPM):
     def sample_log(self,cond,batch_size,ddim, ddim_steps,**kwargs):
 
         if ddim:
-            ddim_sampler = DDIMSampler(self)
+            ddim_sampler = DDIMSampler(self, device=self.device)
             shape = (self.channels, self.image_size, self.image_size)
             samples, intermediates =ddim_sampler.sample(ddim_steps,batch_size,
                                                         shape,cond,verbose=False,**kwargs)
