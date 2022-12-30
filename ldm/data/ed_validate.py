@@ -11,6 +11,7 @@ class EDValidateBatch(Dataset):
                  batch_size=1,
                  set='val',
                  ):
+        self.set = set
         self.data_root = data_root
         self.batch_size = batch_size
 
@@ -32,7 +33,8 @@ class EDValidateBatch(Dataset):
 
     def __getitem__(self, i):
         assert(i < self.num_images)
-        image_train_item = self.image_train_items[i]
+        image_train_item: ImageTrainItem = self.image_train_items[i]
+        print(f"image {i} summoned for dataset '{self.set}': {image_train_item.pathname}, caption '{image_train_item.caption}'")
 
         example = self.__get_image_for_trainer(image_train_item)
         return example

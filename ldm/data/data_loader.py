@@ -65,7 +65,7 @@ class DataLoaderMultiAspect():
     def get_test_images(self):
         return [self.image_caption_pairs[i] for i in self.test_indices]
 
-    def get_validation_images(self):
+    def get_validation_images(self) -> [ImageTrainItem]:
         return [self.image_caption_pairs[i] for i in self.validation_indices]
 
     def get_all_images(self):
