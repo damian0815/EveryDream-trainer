@@ -1324,7 +1324,7 @@ class LatentDiffusion(DDPM):
     @torch.no_grad()
     def log_images_direct(self, z, c, N=8, n_row=4, sample=True, ddim_steps=40, ddim_eta=1., return_keys=None,
                          quantize_denoised=True, inpaint=False, plot_denoise_rows=False, plot_progressive_rows=False,
-                         plot_diffusion_rows=False):
+                         plot_diffusion_rows=False, z_is_premade_x0=False):
         log = dict()
 
         use_ddim = ddim_steps is not None
@@ -1351,10 +1351,15 @@ class LatentDiffusion(DDPM):
             log["diffusion_row"] = diffusion_grid
 
         if sample:
+            x0 = z if z_is_premade_x0 else None
             # get denoise row
             with self.ema_scope("Plotting"):
-                samples, z_denoise_row = self.sample_log(cond=c,batch_size=N,ddim=use_ddim,
-                                                         ddim_steps=ddim_steps,eta=ddim_eta)
+                samples, z_denoise_row = self.sample_log(cond=c,
+                                                         x0=x0,
+                                                         batch_size=N,
+                                                         ddim=use_ddim,
+                                                         ddim_steps=ddim_steps,
+                                                         eta=ddim_eta)
                 # samples, z_denoise_row = self.sample(cond=c, batch_size=N, return_intermediates=True)
             x_samples = self.decode_first_stage(samples)
             log["samples"] = x_samples
@@ -1363,7 +1368,8 @@ class LatentDiffusion(DDPM):
                 log["denoise_row"] = denoise_grid
             
             uc = self.get_learned_conditioning(len(c) * [""])
-            sample_scaled, _ = self.sample_log(cond=c, 
+            sample_scaled, _ = self.sample_log(cond=c,
+                                               x0=x0,
                                                batch_size=N, 
                                                ddim=use_ddim, 
                                                ddim_steps=ddim_steps,
