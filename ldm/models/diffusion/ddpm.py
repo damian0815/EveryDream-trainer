@@ -1370,7 +1370,7 @@ class LatentDiffusion(DDPM):
             
             uc = self.get_learned_conditioning(len(c) * [""])
             sample_scaled, _ = self.sample_log(cond=c,
-                                               x0=x0,
+                                               x_T=x_T,
                                                batch_size=N, 
                                                ddim=use_ddim, 
                                                ddim_steps=ddim_steps,
