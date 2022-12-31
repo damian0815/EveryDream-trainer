@@ -502,21 +502,21 @@ class CUDACallback(Callback):
         self.start_time = time.time()
 
     def on_train_epoch_end(self, trainer, pl_module):
+        epoch_time = time.time() - self.start_time
+        max_memory = None
         if torch.cuda.is_available():
             torch.cuda.synchronize(trainer.strategy.root_device.index)
             max_memory = torch.cuda.max_memory_allocated(trainer.strategy.root_device.index) / 2 ** 20
-        epoch_time = time.time() - self.start_time
 
         try:
-            max_memory = 0
-            if torch.cuda.is_available():
-                max_memory = trainer.strategy.reduce(max_memory)
             epoch_time = trainer.strategy.reduce(epoch_time)
-
             epoch_time_msg =f"Average Epoch time: {epoch_time:.2f} seconds"
-            epoch_peak_mem_msg = f"Average Peak memory {max_memory:.2f}MiB"
             rank_zero_info(epoch_time_msg)
-            rank_zero_info(epoch_peak_mem_msg)
+            if max_memory is not None:
+                max_memory = trainer.strategy.reduce(max_memory)
+                epoch_peak_mem_msg = f"Average Peak memory {max_memory:.2f}MiB"
+                rank_zero_info(epoch_peak_mem_msg)
+
         except AttributeError:
             pass
 
