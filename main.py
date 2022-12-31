@@ -380,6 +380,7 @@ class ImageLogger(Callback):
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
         self.extra_captions = None if extra_captions is None else list(extra_captions)
+        self.extra_captions_x0 = None
 
     @rank_zero_only
     def _testtube(self, pl_module, images, batch_idx, split):
@@ -440,9 +441,7 @@ class ImageLogger(Callback):
             with torch.no_grad():
                 # this calls through to LatentDiffusion.DDPM
                 images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
-                print("*** disabled regular log_images")
                 if self.extra_captions is not None and len(self.extra_captions)>0:
-                    print("** warning: extra_captions is untested and probably doesn't work")
                     batch_size = batch['image'].shape[0]
                     captions_to_generate = self.extra_captions
                     if len(captions_to_generate) > batch_size:
@@ -452,9 +451,12 @@ class ImageLogger(Callback):
                     if len(captions_to_generate) < batch_size:
                         print(f" - fewer extra_captions than batch size -> consider writing more, up to {batch_size}")
                         captions_to_generate.append([''] * (batch_size-len(captions_to_generate)))
+                    c = pl_module.get_learned_conditioning(captions_to_generate)
+
+                    print("making extra captions internal function")
 
                     def generate_extra_captions_images(x0, prefix):
-                        c = pl_module.get_learned_conditioning(captions_to_generate)
+                        print("generating extra captions for prefix", prefix)
                         extra_images = pl_module.log_images_direct(x0, c, N=batch_size, **self.log_images_kwargs)
                         for k,v in extra_images.items():
                             images[prefix + k] = extra_images[k]
@@ -462,11 +464,15 @@ class ImageLogger(Callback):
 
                     # make a fixed set of random seed images the first time, then re-use them
                     if self.extra_captions_x0 is None or self.extra_captions_x0.shape[0] != batch_size:
+                        print("making fixed seed x0")
                         x_shape = [batch_size, 4, 64, 64] # 512x512 samples
                         self.extra_captions_x0 = torch.randn(x_shape, device='cpu')
-                    x0 = self.extra_captions_x0.detach().clone().to(pl_module.device)
-                    generate_extra_captions_images(x0, 'extra_captions_fixedseed_')
-                    generate_extra_captions_images(torch.randn_like(x0), 'extra_captions_randseed_')
+                    x0_fixed = self.extra_captions_x0.detach().clone().to(pl_module.device)
+                    generate_extra_captions_images(x0_fixed, 'extra_captions_fixedseed_')
+                    print("making random x0")
+                    x0_random = torch.randn_like(x0_fixed)
+                    generate_extra_captions_images(x0_random, 'extra_captions_random_')
+                    print("all extra caption images generated")
 
             for k in images:
                 N = min(images[k].shape[0], self.max_images)
