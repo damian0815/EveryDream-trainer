@@ -444,21 +444,21 @@ class ImageLogger(Callback):
                 if self.extra_captions is not None and len(self.extra_captions)>0:
                     print("** warning: extra_captions is untested and probably doesn't work")
                     batch_size = batch['image'].shape[0]
-                    extra_captions = self.extra_captions
-                    if len(extra_captions) > batch_size:
+                    captions_to_generate = self.extra_captions
+                    if len(captions_to_generate) > batch_size:
                         print(f" - more extra captions than batch size -> only using {batch_size} captions (out of {self.extra_captions})")
-                        extra_captions = extra_captions[:batch_size]
+                        captions_to_generate = captions_to_generate[:batch_size]
                     # append '' to make a full batch
-                    if len(extra_captions) < batch_size:
-                        extra_captions.append([''] * (batch_size-len(extra_captions)))
+                    if len(captions_to_generate) < batch_size:
+                        captions_to_generate.append([''] * (batch_size-len(captions_to_generate)))
                     # this calls through to LatentDiffusion.DDPM
                     x_shape = [batch_size, 4, 64, 64] # 512x512 samples
                     x = torch.randn(x_shape, device=pl_module.device)
-                    c = pl_module.get_learned_conditioning(self.extra_captions[0])
+                    c = pl_module.get_learned_conditioning(captions_to_generate)
                     extra_images = pl_module.log_images_direct(x, c, N=batch_size, **self.log_images_kwargs)
                     for k,v in extra_images.items():
                         images['extra_captions_' + k] = extra_images[k]
-                    all_captions.append(self.extra_captions)
+                    all_captions.append(captions_to_generate)
 
             for k in images:
                 N = min(images[k].shape[0], self.max_images)
