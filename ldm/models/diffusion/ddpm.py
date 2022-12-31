@@ -1312,16 +1312,25 @@ class LatentDiffusion(DDPM):
                    quantize_denoised=True, inpaint=False, plot_denoise_rows=False, plot_progressive_rows=False,
                    plot_diffusion_rows=False, **kwargs):
 
-        use_ddim = ddim_steps is not None
 
-        log = dict()
-        z, c, x, xrec, xc = self.get_input(batch, self.first_stage_key,
+        z, c, _, _, _ = self.get_input(batch, self.first_stage_key,
                                            return_first_stage_outputs=True,
                                            force_c_encode=True,
                                            return_original_cond=True,
                                            bs=N)
-        N = min(x.shape[0], N)
-        n_row = min(x.shape[0], n_row)
+        return self.log_images_direct(z, c, N, n_row, sample, ddim_steps, ddim_eta, return_keys, quantize_denoised,
+                                    inpaint, plot_denoise_rows, plot_progressive_rows, plot_diffusion_rows)
+
+    @torch.no_grad()
+    def log_images_direct(self, z, c, N=8, n_row=4, sample=True, ddim_steps=40, ddim_eta=1., return_keys=None,
+                         quantize_denoised=True, inpaint=False, plot_denoise_rows=False, plot_progressive_rows=False,
+                         plot_diffusion_rows=False):
+        log = dict()
+
+        use_ddim = ddim_steps is not None
+
+        N = min(z.shape[0], N)
+        n_row = min(z.shape[0], n_row)
 
         if plot_diffusion_rows:
             # get diffusion row
@@ -1411,6 +1420,9 @@ class LatentDiffusion(DDPM):
             else:
                 return {key: log[key] for key in return_keys}
         return log
+
+    def ema_scope(self, context=None):
+        return super().ema_scope(context)
 
     def configure_optimizers(self):
         lr = self.learning_rate
