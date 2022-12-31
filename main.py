@@ -164,7 +164,7 @@ def get_parser(**parser_kwargs):
 
     parser.add_argument("--actual_resume", 
         type=str,
-        required=True,
+        required=False,
         help="Path to model to actually resume from")
 
     parser.add_argument("--data_root", 
