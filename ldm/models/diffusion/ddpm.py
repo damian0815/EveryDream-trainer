@@ -262,6 +262,7 @@ class DDPM(pl.LightningModule):
     def p_sample_loop(self, shape, return_intermediates=False):
         device = self.betas.device
         b = shape[0]
+        print("p_sample_loop using randn to make img")
         img = torch.randn(shape, device=device)
         intermediates = [img]
         for i in tqdm(reversed(range(0, self.num_timesteps)), desc='Sampling t', total=self.num_timesteps):
@@ -1324,7 +1325,7 @@ class LatentDiffusion(DDPM):
     @torch.no_grad()
     def log_images_direct(self, z, c, N=8, n_row=4, sample=True, ddim_steps=40, ddim_eta=1., return_keys=None,
                          quantize_denoised=True, inpaint=False, plot_denoise_rows=False, plot_progressive_rows=False,
-                         plot_diffusion_rows=False, z_is_premade_x0=False):
+                         plot_diffusion_rows=False, z_is_premade_x_T=False):
         log = dict()
 
         use_ddim = ddim_steps is not None
@@ -1351,11 +1352,11 @@ class LatentDiffusion(DDPM):
             log["diffusion_row"] = diffusion_grid
 
         if sample:
-            x0 = z if z_is_premade_x0 else None
+            x_T = z if z_is_premade_x_T else None
             # get denoise row
             with self.ema_scope("Plotting"):
                 samples, z_denoise_row = self.sample_log(cond=c,
-                                                         x0=x0,
+                                                         x_T=x_T,
                                                          batch_size=N,
                                                          ddim=use_ddim,
                                                          ddim_steps=ddim_steps,

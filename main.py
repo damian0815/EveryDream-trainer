@@ -455,12 +455,15 @@ class ImageLogger(Callback):
 
                     print("making extra captions internal function")
 
-                    def generate_extra_captions_images(x0, prefix):
+                    def generate_extra_captions_images(x_T, prefix):
                         print("generating extra captions for prefix", prefix)
-                        extra_images = pl_module.log_images_direct(x0, c, N=batch_size, z_is_premade_x0=True, **self.log_images_kwargs)
+                        extra_images = pl_module.log_images_direct(z=x_T,
+                                                                   c=c,
+                                                                   N=batch_size,
+                                                                   z_is_premade_x_T=True,
+                                                                   **self.log_images_kwargs)
                         for k,v in extra_images.items():
                             images[prefix + k] = extra_images[k]
-                        all_captions.extend(captions_to_generate)
 
                     # make a fixed set of random seed images the first time, then re-use them
                     if self.extra_captions_x0 is None or self.extra_captions_x0.shape[0] != batch_size:
@@ -473,6 +476,7 @@ class ImageLogger(Callback):
                     x0_random = torch.randn_like(x0_fixed)
                     generate_extra_captions_images(x0_random, 'extra_captions_random_')
                     print("all extra caption images generated")
+                    all_captions.extend(captions_to_generate)
 
             for k in images:
                 N = min(images[k].shape[0], self.max_images)
