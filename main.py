@@ -623,10 +623,11 @@ if __name__ == "__main__":
         trainer_opt = argparse.Namespace(**trainer_config)
         lightning_config.trainer = trainer_config
 
-        #if opt.actual_resume:
-        #    model = load_model_from_config(config, opt.actual_resume)
-        #else:
-        model = instantiate_from_config(config.model)
+        model = None
+        if opt.actual_resume:
+            model = load_model_from_config(config, opt.actual_resume)
+        else:
+            model = instantiate_from_config(config.model)
 
         # trainer and callbacks
         trainer_kwargs = dict()
@@ -669,15 +670,15 @@ if __name__ == "__main__":
             }
         }
 
-        if hasattr(model, "monitor"):
+        if hasattr(config.model.params, "monitor"):
             print(f"Monitoring {model.monitor} as checkpoint metric.")
-            default_modelckpt_cfg["params"]["monitor"] = model.monitor
+            default_modelckpt_cfg["params"]["monitor"] = config.model.params.monitor
             #default_modelckpt_cfg["params"]["save_top_k"] = 3 #moved to yaml
 
         if "modelcheckpoint" in lightning_config:
             modelckpt_cfg = lightning_config.modelcheckpoint
         else:
-            modelckpt_cfg =  OmegaConf.create()
+            modelckpt_cfg = OmegaConf.create()
         modelckpt_cfg = OmegaConf.merge(default_modelckpt_cfg, modelckpt_cfg)
         print(f"Merged modelckpt-cfg: \n{modelckpt_cfg}")
         if version.parse(pl.__version__) < version.parse('1.4.0'):
@@ -805,7 +806,7 @@ if __name__ == "__main__":
         # run
         if opt.train:
             try:
-                trainer.fit(model, data, ckpt_path=opt.actual_resume)
+                trainer.fit(model, data)
             except Exception:
                 melk()
                 raise
