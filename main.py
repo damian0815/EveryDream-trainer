@@ -457,7 +457,7 @@ class ImageLogger(Callback):
 
                     def generate_extra_captions_images(x0, prefix):
                         print("generating extra captions for prefix", prefix)
-                        extra_images = pl_module.log_images_direct(x0, c, N=batch_size, z_is_premade_x0=True **self.log_images_kwargs)
+                        extra_images = pl_module.log_images_direct(x0, c, N=batch_size, z_is_premade_x0=True, **self.log_images_kwargs)
                         for k,v in extra_images.items():
                             images[prefix + k] = extra_images[k]
                         all_captions.extend(captions_to_generate)
