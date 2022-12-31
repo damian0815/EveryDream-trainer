@@ -458,7 +458,7 @@ class ImageLogger(Callback):
                     extra_images = pl_module.log_images_direct(x, c, N=batch_size, **self.log_images_kwargs)
                     for k,v in extra_images.items():
                         images['extra_captions_' + k] = extra_images[k]
-                    all_captions.append(captions_to_generate)
+                    all_captions.extend(captions_to_generate)
 
             for k in images:
                 N = min(images[k].shape[0], self.max_images)
