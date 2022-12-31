@@ -438,10 +438,11 @@ class ImageLogger(Callback):
             # batch['caption'] contains incoming captions
             all_captions = batch['caption']
             with torch.no_grad():
-                #images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
-                print("*** disabled regular log_images")
-                images = {}
+                images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
+                # images = {}
+                # print("*** disabled regular log_images")
                 if self.extra_captions is not None and len(self.extra_captions)>0:
+                    print("** warning: extra_captions is untested and probably doesn't work")
                     shape = [1, 4, 64, 64] # 512x512
                     noise_start_points = [torch.randn(shape, device=pl_module.device) for _ in range(len(self.extra_captions))]
                     extra_captions_batch = {'caption': self.extra_captions,
