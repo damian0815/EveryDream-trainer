@@ -446,19 +446,27 @@ class ImageLogger(Callback):
                     batch_size = batch['image'].shape[0]
                     captions_to_generate = self.extra_captions
                     if len(captions_to_generate) > batch_size:
-                        print(f" - more extra captions than batch size -> only using {batch_size} captions (out of {self.extra_captions})")
+                        print(f" - more extra_captions than batch size -> only using {batch_size} captions (out of {self.extra_captions})")
                         captions_to_generate = captions_to_generate[:batch_size]
                     # append '' to make a full batch
                     if len(captions_to_generate) < batch_size:
+                        print(f" - fewer extra_captions than batch size -> consider writing more, up to {batch_size}")
                         captions_to_generate.append([''] * (batch_size-len(captions_to_generate)))
-                    # this calls through to LatentDiffusion.DDPM
-                    x_shape = [batch_size, 4, 64, 64] # 512x512 samples
-                    x = torch.randn(x_shape, device=pl_module.device)
-                    c = pl_module.get_learned_conditioning(captions_to_generate)
-                    extra_images = pl_module.log_images_direct(x, c, N=batch_size, **self.log_images_kwargs)
-                    for k,v in extra_images.items():
-                        images['extra_captions_' + k] = extra_images[k]
-                    all_captions.extend(captions_to_generate)
+
+                    def generate_extra_captions_images(x0, prefix):
+                        c = pl_module.get_learned_conditioning(captions_to_generate)
+                        extra_images = pl_module.log_images_direct(x0, c, N=batch_size, **self.log_images_kwargs)
+                        for k,v in extra_images.items():
+                            images[prefix + k] = extra_images[k]
+                        all_captions.extend(captions_to_generate)
+
+                    # make a fixed set of random seed images the first time, then re-use them
+                    if self.extra_captions_x0 is None or self.extra_captions_x0.shape[0] != batch_size:
+                        x_shape = [batch_size, 4, 64, 64] # 512x512 samples
+                        self.extra_captions_x0 = torch.randn(x_shape, device='cpu')
+                    x0 = self.extra_captions_x0.detach().clone().to(pl_module.device)
+                    generate_extra_captions_images(x0, 'extra_captions_fixedseed_')
+                    generate_extra_captions_images(torch.randn_like(x0), 'extra_captions_randseed_')
 
             for k in images:
                 N = min(images[k].shape[0], self.max_images)
