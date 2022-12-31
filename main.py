@@ -363,7 +363,7 @@ class SetupCallback(Callback):
 class ImageLogger(Callback):
     def __init__(self, batch_frequency, max_images, clamp=True, increase_log_steps=True,
                  rescale=True, disabled=False, log_on_batch_idx=False, log_first_step=False,
-                 log_images_kwargs=None):
+                 extra_captions=None, log_images_kwargs=None):
         super().__init__()
         self.rescale = rescale
         self.batch_freq = batch_frequency
@@ -379,6 +379,7 @@ class ImageLogger(Callback):
         self.log_on_batch_idx = log_on_batch_idx
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
+        self.extra_captions = extra_captions
 
     @rank_zero_only
     def _testtube(self, pl_module, images, batch_idx, split):
@@ -408,6 +409,7 @@ class ImageLogger(Callback):
                 captions_joined = "\n".join(images[k])
                 with open(path, 'w') as f:
                     f.write(captions_joined)
+                print('saved captions to ', path)
             else:
                 grid = torchvision.utils.make_grid(images[k], nrow=4)
                 if self.rescale:
@@ -416,6 +418,8 @@ class ImageLogger(Callback):
                 grid = grid.numpy()
                 grid = (grid * 255).astype(np.uint8)
                 Image.fromarray(grid).save(path)
+                print('saved images to ', path)
+        print('log_local done')
 
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
@@ -430,7 +434,15 @@ class ImageLogger(Callback):
             if is_train:
                 pl_module.eval()
 
+            # images are generated here
+            # batch['caption'] contains captions
             with torch.no_grad():
+                if self.extra_captions is not None and len(self.extra_captions)>0:
+                    shape = [1, 64, 64, 4] # 512x512
+                    noisy_images = [torch.randn(shape, device=pl_module.device) for _ in range(len(self.extra_captions))]
+                    extra_image_batch = {'caption': self.extra_captions,
+                                         'image': noisy_images}
+                    extra_images = pl_module.log_images({'caption': self.extra_captions}, split=split, **self.log_images_kwargs)
                 images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
 
             for k in images:
@@ -441,12 +453,18 @@ class ImageLogger(Callback):
                     if self.clamp:
                         images[k] = torch.clamp(images[k], -1., 1.)
 
-            images['caption'] = batch['caption']
-            self.log_local(pl_module.logger.save_dir, split, images,
+            # logger_log_images apparently doesn't like extra keys in images dict
+            local_images = images.copy()
+            local_images['caption'] = batch['caption']
+            print('about to log_local')
+            self.log_local(pl_module.logger.save_dir, split, local_images,
                            pl_module.global_step, pl_module.current_epoch, batch_idx)
+            print('log_local done')
 
             logger_log_images = self.logger_log_images.get(logger, lambda *args, **kwargs: None)
+            print('about to logger_log_images')
             logger_log_images(pl_module, images, pl_module.global_step, split)
+            print('logger_log_images done')
 
             if is_train:
                 pl_module.train()
