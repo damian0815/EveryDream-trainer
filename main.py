@@ -164,7 +164,7 @@ def get_parser(**parser_kwargs):
 
     parser.add_argument("--actual_resume", 
         type=str,
-        required=False,
+        required=True,
         help="Path to model to actually resume from")
 
     parser.add_argument("--data_root", 
@@ -435,15 +435,21 @@ class ImageLogger(Callback):
                 pl_module.eval()
 
             # images are generated here
-            # batch['caption'] contains captions
+            # batch['caption'] contains incoming captions
+            all_captions = batch['caption']
             with torch.no_grad():
+                #images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
+                print("*** disabled regular log_images")
+                images = {}
                 if self.extra_captions is not None and len(self.extra_captions)>0:
-                    shape = [1, 64, 64, 4] # 512x512
-                    noisy_images = [torch.randn(shape, device=pl_module.device) for _ in range(len(self.extra_captions))]
-                    extra_image_batch = {'caption': self.extra_captions,
-                                         'image': noisy_images}
-                    extra_images = pl_module.log_images({'caption': self.extra_captions}, split=split, **self.log_images_kwargs)
-                images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
+                    shape = [1, 4, 64, 64] # 512x512
+                    noise_start_points = [torch.randn(shape, device=pl_module.device) for _ in range(len(self.extra_captions))]
+                    extra_captions_batch = {'caption': self.extra_captions,
+                                         'image': noise_start_points}
+                    extra_images = pl_module.log_images(extra_captions_batch, split=split, **self.log_images_kwargs)
+                    for k,v in extra_images.items():
+                        images[k].append(v)
+                    all_captions.append(self.extra_captions)
 
             for k in images:
                 N = min(images[k].shape[0], self.max_images)
@@ -455,7 +461,7 @@ class ImageLogger(Callback):
 
             # logger_log_images apparently doesn't like extra keys in images dict
             local_images = images.copy()
-            local_images['caption'] = batch['caption']
+            local_images['caption'] = all_captions
             print('about to log_local')
             self.log_local(pl_module.logger.save_dir, split, local_images,
                            pl_module.global_step, pl_module.current_epoch, batch_idx)
@@ -568,8 +574,10 @@ if __name__ == "__main__":
             logdir = opt.resume.rstrip("/")
             ckpt = os.path.join(logdir, "checkpoints", "last.ckpt")
 
-        opt.resume_from_checkpoint = ckpt
+        print(f"** Resume: overwriting actual_resume {opt.actual_resume} with {ckpt}, logdir {logdir}")
+        opt.actual_resume = ckpt
         base_configs = sorted(glob.glob(os.path.join(logdir, "configs/*.yaml")))
+        print(f"** Resume: Will pull config from {base_configs}")
         opt.base = base_configs + opt.base
         _tmp = logdir.split("/")
         nowname = _tmp[-1]
@@ -615,10 +623,10 @@ if __name__ == "__main__":
         trainer_opt = argparse.Namespace(**trainer_config)
         lightning_config.trainer = trainer_config
 
-        if opt.actual_resume:
-            model = load_model_from_config(config, opt.actual_resume)
-        else:
-            model = instantiate_from_config(config.model)
+        #if opt.actual_resume:
+        #    model = load_model_from_config(config, opt.actual_resume)
+        #else:
+        model = instantiate_from_config(config.model)
 
         # trainer and callbacks
         trainer_kwargs = dict()
@@ -797,11 +805,12 @@ if __name__ == "__main__":
         # run
         if opt.train:
             try:
-                trainer.fit(model, data)
+                trainer.fit(model, data, ckpt_path=opt.actual_resume)
             except Exception:
                 melk()
                 raise
         if not opt.no_test and not trainer.interrupted:
+            print('testing..')
             trainer.test(model, data)
     except Exception:
         if opt.debug and trainer is not None and trainer.global_rank == 0:
