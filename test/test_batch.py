@@ -7,10 +7,11 @@ import time
 s = time.perf_counter()
 
 #data_root = "r:/everydream-trainer/test/input"
-data_root = "r:/everydream-trainer/training_samples"
+data_root = "../stablediffusion/buzzybee/cropped"
+num_images = 11 # count by hand
 
-batch_size = 6
-repeats=3
+batch_size = 1
+repeats=1
 every_dream_batch = EveryDreamBatch(data_root=data_root, flip_p=0.0, debug_level=2, batch_size=batch_size, repeats=repeats, crop_jitter=25, conditional_dropout=0.3, resolution=512)
 
 print(f" *TEST* EveryDreamBatch epoch image length: {len(every_dream_batch)}")

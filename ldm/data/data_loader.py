@@ -28,6 +28,10 @@ class DataLoaderMultiAspect():
         self.image_paths = []
         self.debug_level = debug_level
         self.flip_p = flip_p
+        self.batch_size = batch_size
+
+        if test_pct + validate_pct > 1:
+            raise ValueError(f"test_pct {test_pct} and validation_pct {validate_pct} must add up to <=1")
 
         self.aspects = aspects.get_aspect_buckets(resolution)
         print(f"* DLMA resolution {resolution}, buckets: {self.aspects}")
@@ -41,15 +45,13 @@ class DataLoaderMultiAspect():
         # automatically split all image indices (which are already shuffled) into test/train indices
         image_count = len(self.image_caption_pairs)
         train_split_pos = int((image_count * (1.0 - (test_pct + validate_pct))) // batch_size) * batch_size
-        if train_split_pos <= 0:
-            raise ValueError(f"test_pct {test_pct} and validation_pct {validate_pct} are too high for image count {image_count}")
+        if train_split_pos == 0:
+            print(f"* Warning: test_pct {test_pct} and validation_pct {validate_pct} produce a training set size of 0 with {image_count} images and batch size {batch_size}")
         test_split_pos = int((image_count * (1.0 - (validate_pct))) // batch_size) * batch_size
 
         self.train_indices = list(range(train_split_pos))
         self.test_indices = list(range(train_split_pos,test_split_pos))
         self.validation_indices = list(range(test_split_pos,image_count))
-        if len(self.test_indices) == 0:
-            print(f"* warning: test_pct {test_pct} results in 0 test images (out of {image_count} total)")
         if len(self.validation_indices) == 0:
             raise ValueError(f"test_pct {test_pct} results in a test split index {test_split_pos} that leaves no images left for validation")
         assert((len(self.train_indices) % batch_size) == 0)

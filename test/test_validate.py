@@ -1,33 +1,35 @@
 # script to test data loader by itself
 # run from training root, edit the data_root manually
 # python ldm/data/test_dl.py
-import ed_validate
 import time
 
+from ldm.data.ed_validate import EDValidateBatch
 from ldm.data.data_loader import DataLoaderMultiAspect
 import ldm.data.dl_singleton as dls
 
 s = time.perf_counter()
 
-data_root = "r:/everydream-trainer/training_samples/multiaspect4"
+data_root = "../stablediffusion/buzzybee/cropped"
+num_images = 11 # count by hand
 
 batch_size = 1
 repeats = 1
 
 dls.shared_dataloader = DataLoaderMultiAspect(data_root=data_root,
-                             seed=555,
-                             debug_level=0,
-                             batch_size=batch_size,
-                             flip_p=0.0,
-                             validate_pct=1)
+                                              seed=555,
+                                              debug_level=0,
+                                              batch_size=batch_size,
+                                              flip_p=0.0,
+                                              test_pct=0,
+                                              validate_pct=1)
 
-ed_val_batch = ed_validate.EDValidateBatch()
+ed_val_batch = EDValidateBatch()
 
 print(f"batch type: {type(ed_val_batch)}")
 i = 0
 is_next = True
 curr_batch = []
-while is_next and i < 84:
+while is_next and i < num_images:
     try:
         example = ed_val_batch[i]
         if example is not None:
@@ -58,6 +60,6 @@ while is_next and i < 84:
     #print(f"{idx:05d}-{idx%6:02d}EveryDreamBatch image caption pair: w:{w} h:{h} {batches.caption[1]}")
 
 print(f" *TEST* test cycles: {i}")
-print(f" *TEST* EDValidateBatch epoch image length: {len(every_dream_batch)}")
+print(f" *TEST* EDValidateBatch epoch image length: {len(ed_val_batch)}")
 elapsed = time.perf_counter() - s
 print(f"{__file__} executed in {elapsed:5.2f} seconds.")
