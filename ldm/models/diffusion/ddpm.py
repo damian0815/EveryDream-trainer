@@ -1325,7 +1325,7 @@ class LatentDiffusion(DDPM):
     @torch.no_grad()
     def log_images_direct(self, z, c, N=8, n_row=4, sample=True, ddim_steps=40, ddim_eta=1., return_keys=None,
                          quantize_denoised=True, inpaint=False, plot_denoise_rows=False, plot_progressive_rows=False,
-                         plot_diffusion_rows=False, z_is_premade_x_T=False):
+                         plot_diffusion_rows=False, z_is_premade_x_T=False, sample_includes_unscaled=True):
         log = dict()
 
         use_ddim = ddim_steps is not None
@@ -1354,19 +1354,20 @@ class LatentDiffusion(DDPM):
         if sample:
             x_T = z if z_is_premade_x_T else None
             # get denoise row
-            with self.ema_scope("Plotting"):
-                samples, z_denoise_row = self.sample_log(cond=c,
-                                                         x_T=x_T,
-                                                         batch_size=N,
-                                                         ddim=use_ddim,
-                                                         ddim_steps=ddim_steps,
-                                                         eta=ddim_eta)
-                # samples, z_denoise_row = self.sample(cond=c, batch_size=N, return_intermediates=True)
-            x_samples = self.decode_first_stage(samples)
-            log["samples"] = x_samples
-            if plot_denoise_rows:
-                denoise_grid = self._get_denoise_row_from_list(z_denoise_row)
-                log["denoise_row"] = denoise_grid
+            if sample_includes_unscaled:
+                with self.ema_scope("Plotting"):
+                    samples, z_denoise_row = self.sample_log(cond=c,
+                                                             x_T=x_T,
+                                                             batch_size=N,
+                                                             ddim=use_ddim,
+                                                             ddim_steps=ddim_steps,
+                                                             eta=ddim_eta)
+                    # samples, z_denoise_row = self.sample(cond=c, batch_size=N, return_intermediates=True)
+                x_samples = self.decode_first_stage(samples)
+                log["samples"] = x_samples
+                if plot_denoise_rows:
+                    denoise_grid = self._get_denoise_row_from_list(z_denoise_row)
+                    log["denoise_row"] = denoise_grid
             
             uc = self.get_learned_conditioning(len(c) * [""])
             sample_scaled, _ = self.sample_log(cond=c,

@@ -6,14 +6,8 @@ import ldm.data.dl_singleton as dls
 from ldm.data.image_train_item import ImageTrainItem
 
 class EDValidateBatch(Dataset):
-    def __init__(self,
-                 data_root,
-                 batch_size=1,
-                 set='val',
-                 ):
+    def __init__(self, set='val'):
         self.set = set
-        self.data_root = data_root
-        self.batch_size = batch_size
 
         if not dls.shared_dataloader:
             raise RuntimeError(f"{type(self).__name__} must be instantiated after EveryDreamBatch")
@@ -25,7 +19,7 @@ class EDValidateBatch(Dataset):
         self._length = self.num_images
 
         print()
-        print(f" ** Validation/Test Set: {set}, steps: {self._length / batch_size:.0f}")
+        print(f" ** Validation/Test Set: {set}, steps: {self._length / dls.shared_dataloader.batch_size:.0f}")
         print()
 
     def __len__(self):

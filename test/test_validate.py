@@ -4,13 +4,24 @@
 import ed_validate
 import time
 
+from ldm.data.data_loader import DataLoaderMultiAspect
+import ldm.data.dl_singleton as dls
+
 s = time.perf_counter()
 
 data_root = "r:/everydream-trainer/training_samples/multiaspect4"
 
 batch_size = 1
 repeats = 1
-ed_val_batch = ed_validate.EDValidateBatch(data_root=data_root, flip_p=0.0, debug_level=0, batch_size=batch_size, repeats=repeats)
+
+dls.shared_dataloader = DataLoaderMultiAspect(data_root=data_root,
+                             seed=555,
+                             debug_level=0,
+                             batch_size=batch_size,
+                             flip_p=0.0,
+                             validate_pct=1)
+
+ed_val_batch = ed_validate.EDValidateBatch()
 
 print(f"batch type: {type(ed_val_batch)}")
 i = 0

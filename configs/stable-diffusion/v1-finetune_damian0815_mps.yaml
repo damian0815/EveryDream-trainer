@@ -61,11 +61,13 @@ model:
 
     cond_stage_config:
       target: ldm.modules.encoders.modules.FrozenCLIPEmbedder
+      params:
+        device: 'cpu'
 
 data:
   target: main.DataModuleFromConfig
   params:
-    batch_size: 4 
+    batch_size: 1
     num_workers: 8
     wrap: falsegit
     train:
@@ -73,21 +75,20 @@ data:
       params:
         repeats: 1   # Adjust how much trainging to do.  Fewer training images need more repeats.  This is multiplied by max_epochs for "amount" of training.
         flip_p: 0   # use 0.5 to randomly flip images each repeat, not recommended unless very low training data (<20 images)
+        conditional_dropout: 0.04   # experimental, likelihood to drop the caption, may help with poorly captioned images
         debug_level: 1   # 1 to print if images are dropped due to multiple-aspect ratio image bucketing
-        seed: 555
-        test_pct: 0.15
-        validate_pct: 0.15
+        seed: 555 # seed for shuffling the input images
+        test_pct: 0 # test is unused
+        validate_pct: 0.1 # by default, reserve 10% (=0.1) of images for evaluating loss (these images are not used for training).
     validation:
       target: ldm.data.ed_validate.EDValidateBatch
-      params:
     test:
       target: ldm.data.ed_validate.EDValidateBatch
-      params:
 
 lightning:
   modelcheckpoint:
     params:
-      every_n_epochs: 1  # produce a ckpt every epoch, leave 1!
+      every_n_epochs: 10  # how often to produce a (12GB) ckpt. for 500 images with batch size 4 and validate_pct of 0.1, setting this to 8 will produce a checkpoint roughly every 1000 steps.
       #every_n_train_steps: 1400 # can only use epoch or train step checkpoints, can use this if you want instead of every_n_epochs but suggest epochs
       save_top_k: 3   # *** How many checkpoints you will get to try out, automatically keeps what it thinks are the best. ** REQUIRES ~15GB+ of VOLUME store per checkpoint!!! ***
       # Above is important.  It costs a lot of VOLUME store but keeps you from having to start over if you overtrain by giving you a few checkpoints to try out.
@@ -97,14 +98,19 @@ lightning:
     image_logger:
       target: main.ImageLogger
       params:
-        batch_frequency: 250
+        batch_frequency: 200 # how many steps to run between each image generation
         max_images: 16
         increase_log_steps: False
+        extra_captions: # captions for extra images to log alongside samples_gs_* and sample_scaled_gs_* images. the number of captions should be the same as the batch size.
+          - 'a cat-toy'
+          - 'a cat-toy on a coffee table'
+          - 'a cat-toy riding a bicycle'
+          - 'a painting of a cat-toy'
 
   trainer:
     benchmark: True
-    max_epochs: 4   # suggest 3-4+ and adjust repeats above, only "save_top_k" number (above) of epochs are kept, be mindful of volume store use
+    max_epochs: 60   # suggest 60, only "save_top_k" number (above) of epochs are kept, be mindful of volume store use
     max_steps: 99000   # better to end on epochs not steps, especially with >500 images to ensure even distribution, but you can set this if you really want...
-    check_val_every_n_epoch: 1
+    check_val_every_n_epoch: 10 # how often to run validation. you should probably use the same value as `every_n_epochs` above.
     accelerator: 'cpu'
     devices: 1

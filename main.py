@@ -380,7 +380,7 @@ class ImageLogger(Callback):
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
         self.extra_captions = None if extra_captions is None else list(extra_captions)
-        self.extra_captions_x0 = None
+        self.extra_captions_x_T = None
 
     @rank_zero_only
     def _testtube(self, pl_module, images, batch_idx, split):
@@ -445,11 +445,11 @@ class ImageLogger(Callback):
                     batch_size = batch['image'].shape[0]
                     captions_to_generate = self.extra_captions
                     if len(captions_to_generate) > batch_size:
-                        print(f" - more extra_captions than batch size -> only using {batch_size} captions (out of {self.extra_captions})")
+                        print(f" - more extra_captions than batch size, truncating to {batch_size} (out of {self.extra_captions}).")
                         captions_to_generate = captions_to_generate[:batch_size]
                     # append '' to make a full batch
                     if len(captions_to_generate) < batch_size:
-                        print(f" - fewer extra_captions than batch size -> consider writing more, up to {batch_size}")
+                        print(f" - fewer extra_captions than batch size, padding with ''. consider writing more extra_captions, up to {batch_size} in total.")
                         captions_to_generate.append([''] * (batch_size-len(captions_to_generate)))
                     c = pl_module.get_learned_conditioning(captions_to_generate)
 
@@ -461,20 +461,21 @@ class ImageLogger(Callback):
                                                                    c=c,
                                                                    N=batch_size,
                                                                    z_is_premade_x_T=True,
+                                                                   sample_includes_unscaled=False,
                                                                    **self.log_images_kwargs)
                         for k,v in extra_images.items():
                             images[prefix + k] = extra_images[k]
 
                     # make a fixed set of random seed images the first time, then re-use them
-                    if self.extra_captions_x0 is None or self.extra_captions_x0.shape[0] != batch_size:
-                        print("making fixed seed x0")
+                    if self.extra_captions_x_T is None or self.extra_captions_x_T.shape[0] != batch_size:
+                        print("making fixed seed x_T")
                         x_shape = [batch_size, 4, 64, 64] # 512x512 samples
-                        self.extra_captions_x0 = torch.randn(x_shape, device='cpu')
-                    x0_fixed = self.extra_captions_x0.detach().clone().to(pl_module.device)
-                    generate_extra_captions_images(x0_fixed, 'extra_captions_fixedseed_')
-                    print("making random x0")
-                    x0_random = torch.randn_like(x0_fixed)
-                    generate_extra_captions_images(x0_random, 'extra_captions_random_')
+                        self.extra_captions_x_T = torch.randn(x_shape, device='cpu')
+                    x_T_fixed = self.extra_captions_x_T.detach().clone().to(pl_module.device)
+                    generate_extra_captions_images(x_T_fixed, 'extra_captions_fixedseed_')
+                    print("making random x_T")
+                    x_T_random = torch.randn_like(x_T_fixed)
+                    generate_extra_captions_images(x_T_random, 'extra_captions_random_')
                     print("all extra caption images generated")
                     all_captions.extend(captions_to_generate)
 
@@ -765,22 +766,7 @@ if __name__ == "__main__":
 
         # data
         config.data.params.train.params.data_root = opt.data_root
-        if config.data.params.validation.params is None:
-            config.data.params.validation.params = {}
-        config.data.params.validation.params.data_root = opt.data_root
-        if config.data.params.test.params is None:
-            config.data.params.test.params = {}
-        config.data.params.test.params.data_root = opt.data_root
         data = instantiate_from_config(config.data)
-
-        # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
-        # calling these ourselves should not be necessary but it is.
-        # lightning still takes care of proper multiprocessing though
-        #data.prepare_data()
-        #data.setup()
-        #print("#### Data #####")
-        #for k in data.datasets:
-        #    print(f"{k}, {data.datasets[k].__class__.__name__}, {len(data.datasets[k])}")
 
         # configure learning rate
         bs, base_lr = config.data.params.batch_size, config.model.base_learning_rate
