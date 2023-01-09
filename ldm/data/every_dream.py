@@ -62,10 +62,15 @@ class EveryDreamBatch(Dataset):
         print(f" ** Trainer Set: {set}, steps: {self._length / batch_size:.0f}, num_images: {self.num_images}, batch_size: {self.batch_size}, length w/repeats: {self._length}")
         print()
 
+    def shuffle(self):
+        print("train dataloader shuffling image_train_items")
+        random.shuffle(self.image_train_items)
+
     def __len__(self):
         return self._length
 
     def __getitem__(self, i):
+
         idx = i % self.num_images
         image_train_item = self.image_train_items[idx]
         example = self.__get_image_for_trainer(image_train_item, self.debug_level)

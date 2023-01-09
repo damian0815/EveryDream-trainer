@@ -273,6 +273,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
         else:
             init_fn = None
         dataset = self.datasets["train"]
+        dataset.shuffle()
         return DataLoader(dataset, batch_size=self.batch_size,
                           num_workers=self.num_workers, shuffle=False,
                           worker_init_fn=init_fn)
