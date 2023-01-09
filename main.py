@@ -204,6 +204,9 @@ class WrappedDataset(Dataset):
     def __getitem__(self, idx):
         return self.data[idx]
 
+    def shuffle(self):
+        self.data.shuffle()
+
 
 def worker_init_fn(_):
     worker_info = torch.utils.data.get_worker_info()
