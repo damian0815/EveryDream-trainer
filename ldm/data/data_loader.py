@@ -59,7 +59,11 @@ class DataLoaderMultiAspect():
         assert((len(self.validation_indices) % batch_size) == 0)
 
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
-        
+
+    def shuffle(self):
+        random.shuffle(self.train_indices)
+        random.shuffle(self.test_indices)
+        random.shuffle(self.validation_indices)
 
     def get_train_images(self):
         return [self.image_caption_pairs[i] for i in self.train_indices]

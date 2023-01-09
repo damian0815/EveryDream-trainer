@@ -18,6 +18,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, Callback, LearningRateM
 from pytorch_lightning.utilities.distributed import rank_zero_only
 from pytorch_lightning.utilities import rank_zero_info
 
+from ldm.data import dl_singleton
 from ldm.data.base import Txt2ImgIterableBaseDataset
 from ldm.util import instantiate_from_config
 
@@ -526,6 +527,13 @@ class ImageLogger(Callback):
             #if (pl_module.calibrate_grad_norm and batch_idx % 25 == 0) and batch_idx > 0:
                 #self.log_gradients(trainer, pl_module, batch_idx=batch_idx)
 
+class ShuffleCallback(Callback):
+    def __int__(self):
+        print("instantiated ShuffleCallback")
+
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        print("shuffling indices")
+        dl_singleton.shared_dataloader.shuffle()
 
 class CUDACallback(Callback):
     def on_train_epoch_start(self, trainer, pl_module):
@@ -744,6 +752,9 @@ if __name__ == "__main__":
             "cuda_callback": {
                 "target": "main.CUDACallback"
             },
+            "shuffle_callback": {
+                "target": "main.ShuffleCallback"
+            }
         }
         if version.parse(pl.__version__) >= version.parse('1.4.0'):
             default_callbacks_cfg.update({'checkpoint_callback': modelckpt_cfg})
