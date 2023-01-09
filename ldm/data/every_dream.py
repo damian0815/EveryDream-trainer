@@ -28,7 +28,8 @@ class EveryDreamBatch(Dataset):
                  crop_jitter=20,
                  seed=555,
                  test_pct=0.15,
-                 validate_pct=0.15
+                 validate_pct=0.15,
+                 allow_train_validate_overlap=False
                  ):
         self.data_root = data_root
         self.batch_size = batch_size
@@ -48,7 +49,8 @@ class EveryDreamBatch(Dataset):
                                          flip_p=flip_p,
                                          resolution=resolution,
                                          test_pct=test_pct,
-                                         validate_pct=validate_pct)
+                                         validate_pct=validate_pct,
+                                         allow_train_validate_overlap=allow_train_validate_overlap)
 
         self.image_train_items = dls.shared_dataloader.get_train_images()
         
