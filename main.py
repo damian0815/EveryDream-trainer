@@ -777,6 +777,11 @@ if __name__ == "__main__":
 
         # data
         config.data.params.train.params.data_root = opt.data_root
+        if config.data.params.validation.params is None:
+            config.data.params.validation.params = {}
+        if config.data.params.test.params is None:
+            config.data.params.test.params = {}
+
         data = instantiate_from_config(config.data)
 
         # configure learning rate
