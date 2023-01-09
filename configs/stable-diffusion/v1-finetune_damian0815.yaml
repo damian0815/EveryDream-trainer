@@ -77,7 +77,8 @@ data:
         debug_level: 1   # 1 to print if images are dropped due to multiple-aspect ratio image bucketing
         seed: 555 # seed for shuffling the input images
         test_pct: 0 # test is unused
-        validate_pct: 0.1 # by default, reserve 10% (=0.1) of images for evaluating loss (these images are not used for training).
+        validate_pct: 0.1 # by default, reserve 10% (=0.1) of images for evaluating loss.
+        allow_train_validate_overlap: True # if False, do not use validation images for training
     validation:
       target: ldm.data.ed_validate.EDValidateBatch
     test:

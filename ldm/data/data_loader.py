@@ -24,7 +24,8 @@ class DataLoaderMultiAspect():
                  flip_p=0.0,
                  resolution=512,
                  test_pct=0.15,
-                 validate_pct=0.15):
+                 validate_pct=0.15,
+                 allow_train_validate_overlap=False):
         self.image_paths = []
         self.debug_level = debug_level
         self.flip_p = flip_p
@@ -44,16 +45,20 @@ class DataLoaderMultiAspect():
 
         # automatically split all image indices (which are already shuffled) into test/train indices
         image_count = len(self.image_caption_pairs)
-        train_split_pos = int((image_count * (1.0 - (test_pct + validate_pct))) // batch_size) * batch_size
-        if train_split_pos == 0:
+        train_end_pos = int((image_count * (1.0 - (test_pct +
+                                                     (0 if allow_train_validate_overlap else validate_pct)
+                                                     ))) // batch_size) * batch_size
+        if train_end_pos == 0:
             print(f"* Warning: test_pct {test_pct} and validation_pct {validate_pct} produce a training set size of 0 with {image_count} images and batch size {batch_size}")
-        test_split_pos = int((image_count * (1.0 - (validate_pct))) // batch_size) * batch_size
+        validate_count = int((image_count * validate_pct) // batch_size) * batch_size
+        validate_start_pos = train_end_pos - validate_count if allow_train_validate_overlap else train_end_pos
+        validate_end_pos = int((image_count * (1.0 - (test_pct))) // batch_size) * batch_size
 
-        self.train_indices = list(range(train_split_pos))
-        self.test_indices = list(range(train_split_pos,test_split_pos))
-        self.validation_indices = list(range(test_split_pos,image_count))
+        self.train_indices = list(range(train_end_pos))
+        self.validation_indices = list(range(validate_start_pos,validate_end_pos))
+        self.test_indices = list(range(validate_end_pos,image_count))
         if len(self.validation_indices) == 0:
-            raise ValueError(f"test_pct {test_pct} results in a test split index {test_split_pos} that leaves no images left for validation")
+            raise ValueError(f"test_pct {test_pct} results in a test split index {validate_end_pos} that leaves no images left for validation")
         assert((len(self.train_indices) % batch_size) == 0)
         assert((len(self.test_indices) % batch_size) == 0)
         assert((len(self.validation_indices) % batch_size) == 0)
