@@ -4,7 +4,9 @@ import ldm.data.dl_singleton as dls
 from ldm.data.image_train_item import ImageTrainItem
 
 class EDValidateBatch(Dataset):
-    def __init__(self, set='val'):
+    def __init__(self,
+                 set='val'
+                 ):
         self.set = set
 
         if not dls.shared_dataloader:
